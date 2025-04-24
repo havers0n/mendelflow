@@ -19,6 +19,22 @@ const Product = sequelize.define('Product', {
   description: {
     type: DataTypes.TEXT,
   },
+  material: {
+    type: DataTypes.STRING,
+  },
+  diameter: {
+    type: DataTypes.STRING, // Можно заменить на FLOAT при необходимости
+  },
+  type: {
+    type: DataTypes.STRING,
+  },
+  compatibility: {
+    type: DataTypes.JSONB,
+    defaultValue: [],
+  },
+  engraving: {
+    type: DataTypes.STRING, // или BOOLEAN, если только флаг
+  },
   dimensions: {
     type: DataTypes.JSONB,
     defaultValue: {},

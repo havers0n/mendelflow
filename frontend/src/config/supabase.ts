@@ -54,6 +54,7 @@ export interface Task {
     quantityCollected: number;
     location: string;
   }[];
+  comments: string[];
 }
 
 export interface Order {
@@ -111,7 +112,8 @@ export const db = {
         dueDate: task.due_date ? new Date(task.due_date) : new Date(),
         orderNumber: task.order_number || '',
         location: task.location || '',
-        items: task.items || []
+        items: task.items || [],
+        comments: task.comments || []
       }));
     } catch (error) {
       console.error('Unexpected error in getTasks:', error);
@@ -131,7 +133,8 @@ export const db = {
         due_date: task.dueDate?.toISOString(),
         order_number: task.orderNumber || '',
         location: task.location || '',
-        items: task.items || []
+        items: task.items || [],
+        comments: task.comments || []
       };
 
       console.log('Task data to insert:', taskData);
@@ -162,7 +165,8 @@ export const db = {
         dueDate: data.due_date ? new Date(data.due_date) : new Date(),
         orderNumber: data.order_number || '',
         location: data.location || '',
-        items: data.items || []
+        items: data.items || [],
+        comments: data.comments || []
       };
     } catch (error) {
       console.error('Unexpected error in createTask:', error);
@@ -184,7 +188,8 @@ export const db = {
         ...(updates.dueDate && { due_date: updates.dueDate.toISOString() }),
         ...(updates.orderNumber !== undefined && { order_number: updates.orderNumber }),
         ...(updates.location !== undefined && { location: updates.location }),
-        ...(updates.items && { items: updates.items })
+        ...(updates.items && { items: updates.items }),
+        ...(updates.comments && { comments: updates.comments })
       };
 
       console.log('Task data to update:', taskData);
@@ -216,7 +221,8 @@ export const db = {
         dueDate: data.due_date ? new Date(data.due_date) : new Date(),
         orderNumber: data.order_number || '',
         location: data.location || '',
-        items: data.items || []
+        items: data.items || [],
+        comments: data.comments || []
       };
     } catch (error) {
       console.error('Unexpected error in updateTask:', error);
@@ -320,5 +326,37 @@ export const db = {
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  async getUserByEmail(email: string) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
+      return null;
+    }
+  },
+
+  // Products
+  async getProducts() {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*');
+      if (error) {
+        console.error('Error fetching products:', error);
+        return handleSupabaseError(error);
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Unexpected error in getProducts:', error);
+      throw error;
+    }
   }
 }; 

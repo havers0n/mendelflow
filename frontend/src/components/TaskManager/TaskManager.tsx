@@ -24,7 +24,10 @@ const TaskManager: React.FC = () => {
   }, []);
 
   const handleError = (error: unknown, defaultMessage: string) => {
-    console.error('Error details:', error);
+    // Suppress logging during tests
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Error details:', error);
+    }
     const message = error instanceof Error ? error.message : defaultMessage;
     setError(message);
     showSnackbar(message, 'error');

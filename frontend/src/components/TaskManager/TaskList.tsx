@@ -16,7 +16,10 @@ import {
   TextField,
   MenuItem,
   Stack,
-  DialogContentText
+  DialogContentText,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -26,7 +29,7 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { Task, TaskStatus, TaskPriority } from '../../interfaces/Task';
+import { Task, TaskStatus, TaskPriority, TaskComment } from '../../interfaces/Task';
 import { User } from '../../interfaces/User';
 import NewTaskDialog from './NewTaskDialog';
 
@@ -50,6 +53,10 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
+  const [newComment, setNewComment] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -115,9 +122,29 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
+  // Фильтрация задач
+  const getFilteredTasks = () => {
+    let filtered = tasks;
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(t => t.status === statusFilter);
+    }
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(t => t.priority === priorityFilter);
+    }
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      filtered = filtered.filter(t =>
+        t.title.toLowerCase().includes(s) ||
+        (t.description && t.description.toLowerCase().includes(s)) ||
+        (t.assignedTo && t.assignedTo.toLowerCase().includes(s))
+      );
+    }
+    return filtered;
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2, flexWrap: 'wrap' }}>
         <Typography variant="h5" component="h1">
           Управление задачами
         </Typography>
@@ -129,10 +156,49 @@ const TaskList: React.FC<TaskListProps> = ({
           Новая задача
         </Button>
       </Box>
-
+      {/* Поиск и фильтры */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <FormControl sx={{ minWidth: 160 }} size="small">
+          <InputLabel>Статус</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Статус"
+            onChange={e => setStatusFilter(e.target.value)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="NOT_STARTED">Не начата</MenuItem>
+            <MenuItem value="IN_PROGRESS">В работе</MenuItem>
+            <MenuItem value="COMPLETED">Завершена</MenuItem>
+            <MenuItem value="ON_HOLD">На паузе</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 160 }} size="small">
+          <InputLabel>Приоритет</InputLabel>
+          <Select
+            value={priorityFilter}
+            label="Приоритет"
+            onChange={e => setPriorityFilter(e.target.value)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="LOW">Низкий</MenuItem>
+            <MenuItem value="MEDIUM">Средний</MenuItem>
+            <MenuItem value="HIGH">Высокий</MenuItem>
+            <MenuItem value="URGENT">Срочный</MenuItem>
+          </Select>
+        </FormControl>
+        <Box sx={{ flexGrow: 1 }}>
+          <input
+            type="text"
+            placeholder="Поиск по названию, описанию, исполнителю..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+          />
+        </Box>
+      </Box>
       <Paper>
         <List>
-          {tasks.map((task) => (
+          {getFilteredTasks().map((task) => (
             <ListItem
               component="div"
               key={task.id}
@@ -273,12 +339,78 @@ const TaskList: React.FC<TaskListProps> = ({
               onChange={(e) => handleInputChange('location', e.target.value)}
               helperText="Формат: XX,XX,XX,XX (необязательно)"
             />
+            {/* Комментарии */}
+            <Box>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>Комментарии</Typography>
+              <List sx={{ maxHeight: 120, overflow: 'auto', mb: 1 }}>
+                {editedTask?.comments && editedTask.comments.length > 0 ? (
+                  editedTask.comments.map((comment, idx) => (
+                    <ListItem key={idx} alignItems="flex-start">
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {comment.author} — {new Date(comment.createdAt).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body1">{comment.text}</Typography>
+                      </Box>
+                    </ListItem>
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">Комментариев нет</Typography>
+                )}
+              </List>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Добавить комментарий"
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    if (!newComment.trim()) return;
+                    setEditedTask(prev => ({
+                      ...prev,
+                      comments: [
+                        ...(prev.comments || []),
+                        {
+                          author: currentUser.fullName || currentUser.username,
+                          text: newComment,
+                          createdAt: new Date(),
+                        },
+                      ],
+                    }));
+                    setNewComment('');
+                  }}
+                >
+                  Добавить
+                </Button>
+              </Stack>
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsEditDialogOpen(false)}>Отмена</Button>
           <Button onClick={handleSaveTask} variant="contained">
             Сохранить
+          </Button>
+          <Button
+            color="success"
+            variant="outlined"
+            onClick={async () => {
+              if (!selectedTask) return;
+              await onTaskUpdate(selectedTask.id, {
+                ...editedTask,
+                status: TaskStatus.COMPLETED,
+                comments: editedTask.comments,
+              });
+              setIsEditDialogOpen(false);
+              setEditedTask({});
+            }}
+            disabled={editedTask.status === TaskStatus.COMPLETED}
+          >
+            Выполнить
           </Button>
         </DialogActions>
       </Dialog>

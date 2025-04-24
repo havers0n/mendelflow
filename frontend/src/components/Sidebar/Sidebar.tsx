@@ -1,4 +1,6 @@
+import Grid from '@mui/material/Grid';
 import React from 'react';
+import LogoutIcon from './LogoutIcon';
 import {
   Box,
   Drawer,
@@ -21,11 +23,12 @@ interface SidebarProps {
   modules: Module[];
   activeModule: string;
   onModuleChange: (moduleId: string) => void;
+  onLogout?: () => void;
 }
 
 const drawerWidth = 240;
 
-const Sidebar: React.FC<SidebarProps> = ({ modules, activeModule, onModuleChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ modules, activeModule, onModuleChange, onLogout }) => {
   return (
     <Drawer
       variant="permanent"
@@ -56,10 +59,16 @@ const Sidebar: React.FC<SidebarProps> = ({ modules, activeModule, onModuleChange
               </ListItemButton>
             </ListItem>
           ))}
+          <ListItem disablePadding>
+            <ListItemButton onClick={onLogout} data-testid="logout-button">
+              <ListItemIcon><LogoutIcon color="error" /></ListItemIcon>
+              <ListItemText primary="Выйти" />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Box>
     </Drawer>
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

@@ -10,6 +10,7 @@ export interface Task {
   orderNumber?: string;
   location: string; // Формат: "00,00,00,00"
   items: TaskItem[];
+  comments?: TaskComment[];
 }
 
 export interface TaskItem {
@@ -19,6 +20,12 @@ export interface TaskItem {
   quantity: number;
   quantityCollected: number;
   location: string;
+}
+
+export interface TaskComment {
+  author: string;
+  text: string;
+  createdAt: Date;
 }
 
 export enum TaskStatus {

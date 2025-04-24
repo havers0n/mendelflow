@@ -14,6 +14,10 @@ import {
   Tabs,
   Tab,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -26,6 +30,7 @@ import {
 import { Order, OrderStatus, OrderItemStatus } from '../../interfaces/Order';
 import NewOrderDialog from './NewOrderDialog';
 import OrderExecutionDialog from './OrderExecutionDialog';
+import Dialog from '@mui/material/Dialog';
 
 // Временные данные для демонстрации
 const MOCK_ORDERS: Order[] = [
@@ -45,6 +50,26 @@ const MOCK_ORDERS: Order[] = [
         location: '12,05,00,00',
         status: OrderItemStatus.PENDING,
         availableQuantity: 100
+      },
+      {
+        id: '2',
+        sku: 'BV-50',
+        name: 'Кран шаровый',
+        quantity: 10,
+        quantityCollected: 0,
+        location: '12,05,01,00',
+        status: OrderItemStatus.PENDING,
+        availableQuantity: 15
+      },
+      {
+        id: '3',
+        sku: 'ABC-123',
+        name: 'Заглушка',
+        quantity: 5,
+        quantityCollected: 0,
+        location: '01,01,01,01',
+        status: OrderItemStatus.PENDING,
+        availableQuantity: 7
       }
     ],
     tasks: [],
@@ -110,6 +135,8 @@ const OrderManager: React.FC = () => {
   const [isExecutionDialogOpen, setIsExecutionDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const currentUserId = 'user1'; // В реальном приложении это будет из контекста авторизации
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_progress' | 'completed' | 'open'>('all');
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -162,6 +189,25 @@ const OrderManager: React.FC = () => {
     }
   };
 
+  const getFilteredOrders = () => {
+    let filtered = orders;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'new') filtered = filtered.filter(o => o.status === OrderStatus.NEW);
+      if (statusFilter === 'in_progress') filtered = filtered.filter(o => o.status === OrderStatus.IN_PROGRESS);
+      if (statusFilter === 'completed') filtered = filtered.filter(o => o.status === OrderStatus.COMPLETED || o.status === OrderStatus.ON_HOLD);
+      if (statusFilter === 'open') filtered = filtered.filter(o => o.status === OrderStatus.NEW); // Открытые = новые
+    }
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      filtered = filtered.filter(o =>
+        o.orderNumber.toLowerCase().includes(s) ||
+        (o.customerName && o.customerName.toLowerCase().includes(s)) ||
+        (o.invoiceNumber && o.invoiceNumber.toLowerCase().includes(s))
+      );
+    }
+    return filtered;
+  };
+
   const renderOrdersList = (filteredOrders: Order[]) => (
     <List>
       {filteredOrders.map((order) => (
@@ -195,6 +241,18 @@ const OrderManager: React.FC = () => {
               <Typography component="span" variant="body2" color="text.secondary">
                 Прогресс: {order.progress}%
               </Typography>
+              {order.items && order.items.length > 0 && (
+                <Box sx={{ mt: 1, ml: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Позиции:</Typography>
+                  {order.items.map((item) => (
+                    <Box key={item.id} sx={{ display: 'flex', gap: 2, ml: 1 }}>
+                      <Typography variant="body2">{item.name} ({item.sku})</Typography>
+                      <Typography variant="body2" color="success.main">В наличии: {item.availableQuantity}</Typography>
+                      <Typography variant="body2" color="primary.main">Необходимо: {item.quantity}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           </Box>
           <ListItemSecondaryAction>
@@ -215,7 +273,7 @@ const OrderManager: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', mb: 3, gap: 2 }}>
         <Typography variant="h5">Управление заказами</Typography>
         <Button
           variant="contained"
@@ -225,7 +283,31 @@ const OrderManager: React.FC = () => {
           Новый заказ
         </Button>
       </Box>
-
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
+        <FormControl sx={{ minWidth: 180 }} size="small">
+          <InputLabel>Статус</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Статус"
+            onChange={e => setStatusFilter(e.target.value as any)}
+          >
+            <MenuItem value="all">Все</MenuItem>
+            <MenuItem value="new">Новые</MenuItem>
+            <MenuItem value="in_progress">В работе</MenuItem>
+            <MenuItem value="completed">Завершённые</MenuItem>
+            <MenuItem value="open">Открытые</MenuItem>
+          </Select>
+        </FormControl>
+        <Box sx={{ flexGrow: 1 }}>
+          <input
+            type="text"
+            placeholder="Поиск по номеру заказа, клиенту, накладной..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+          />
+        </Box>
+      </Box>
       <Paper>
         <Tabs
           value={currentTab}
@@ -238,31 +320,81 @@ const OrderManager: React.FC = () => {
           <Tab label="Новые" />
           <Tab label="В работе" />
           <Tab label="Завершенные" />
+          <Tab label="Открытые заказы" />
         </Tabs>
 
         <TabPanel value={currentTab} index={0}>
-          {renderOrdersList(orders)}
+          {renderOrdersList(getFilteredOrders())}
         </TabPanel>
 
         <TabPanel value={currentTab} index={1}>
-          {renderOrdersList(orders.filter(order => order.assignedTo === currentUserId))}
+          {renderOrdersList(getFilteredOrders().filter(order => order.assignedTo === currentUserId))}
         </TabPanel>
 
         <TabPanel value={currentTab} index={2}>
-          {renderOrdersList(orders.filter(order => order.status === OrderStatus.NEW))}
+          {renderOrdersList(getFilteredOrders().filter(order => order.status === OrderStatus.NEW))}
         </TabPanel>
 
         <TabPanel value={currentTab} index={3}>
-          {renderOrdersList(orders.filter(order => 
+          {renderOrdersList(getFilteredOrders().filter(order => 
             order.status === OrderStatus.IN_PROGRESS
           ))}
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
-          {renderOrdersList(orders.filter(order =>
+          {renderOrdersList(getFilteredOrders().filter(order =>
             order.status === OrderStatus.COMPLETED ||
             order.status === OrderStatus.ON_HOLD
           ))}
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={5}>
+          <List>
+            {getFilteredOrders().filter(order => order.status === OrderStatus.NEW).map((order) => (
+              <ListItem
+                key={order.id}
+                sx={{
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '&:last-child': { borderBottom: 'none' },
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AssignmentIcon />
+                    <Typography component="span" variant="subtitle1">
+                      Заказ {order.orderNumber}
+                    </Typography>
+                    <Chip
+                      label={order.status}
+                      color={getStatusColor(order.status)}
+                      size="small"
+                    />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+                    <Typography component="span" variant="body2" color="text.secondary">
+                      Клиент: {order.customerName}
+                    </Typography>
+                    <Typography component="span" variant="body2" color="text.secondary">
+                      Накладная: {order.invoiceNumber}
+                    </Typography>
+                  </Box>
+                </Box>
+                <ListItemSecondaryAction>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setIsExecutionDialogOpen(true);
+                    }}
+                  >
+                    Перейти к заказу
+                  </Button>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
         </TabPanel>
       </Paper>
 

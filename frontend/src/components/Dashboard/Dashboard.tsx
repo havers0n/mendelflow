@@ -39,6 +39,7 @@ import {
   Warning as WarningIcon,
   NewReleases as NewIcon,
   Refresh as InProgressIcon,
+  Queue as QueueIcon,
 } from '@mui/icons-material';
 import { Task, TaskStatus, TaskPriority } from '../../interfaces/Task';
 import { Order, OrderStatus } from '../../interfaces/Order';
@@ -47,6 +48,8 @@ import NewOrderDialog from '../OrderManager/NewOrderDialog';
 import { Permission, UserRole } from '../../interfaces/Role';
 import { PermissionGuard } from '../PermissionGuard/PermissionGuard';
 import { User } from '../../interfaces/User';
+import { useNavigate } from 'react-router-dom';
+import Grid from '@mui/material/Unstable_Grid2';
 
 // Моковые данные для демонстрации
 const MOCK_TASKS: Task[] = [
@@ -188,6 +191,7 @@ const Dashboard: React.FC = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationType, setNotificationType] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleNewTask = (task: Omit<Task, 'id' | 'createdAt'>) => {
     // В реальном приложении здесь будет API-запрос
@@ -214,9 +218,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
-        <Typography variant="h4">
+    <Box sx={{ p: 3, mt: 6 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2, position: 'relative' }}>
+        <Typography variant="h4" sx={{ mb: 1 }}>
           Дашборд
         </Typography>
         <PermissionGuard
@@ -232,6 +236,8 @@ const Dashboard: React.FC = () => {
               width: 56,
               height: 56,
               backgroundColor: '#f50057',
+              mb: 1,
+              ml: 1,
               '&:hover': {
                 backgroundColor: '#c51162',
                 transform: 'scale(1.1)',
@@ -248,7 +254,43 @@ const Dashboard: React.FC = () => {
         </PermissionGuard>
       </Box>
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+      <Grid container spacing={3} mb={4} mt={2}>
+        {/* Очередь */}
+        <Grid xs={12} sm={6} md={4} lg={3}>
+          <Card role="button" sx={{ height: '100%', cursor: 'pointer', transition: '0.2s', '&:hover': { boxShadow: 8, transform: 'scale(1.04)' } }} onClick={() => navigate('/dashboard/queue')}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+              <QueueIcon sx={{ fontSize: 48, color: '#1976d2', mb: 2 }} />
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>Очередь</Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Управление электронной очередью, уведомления, статусы, SMS.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* Плейсхолдеры для будущих модулей */}
+        <Grid xs={12} sm={6} md={4} lg={3}>
+          <Card sx={{ height: '100%', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, color: '#888' }}>Будущий модуль</Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Здесь появится новый раздел.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid xs={12} sm={6} md={4} lg={3}>
+          <Card sx={{ height: '100%', opacity: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1, color: '#888' }}>Будущий модуль</Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Здесь появится новый раздел.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
         {/* Активные задачи */}
         <Box sx={{ width: { xs: '100%', md: '50%' } }}>
           <Card>
@@ -378,7 +420,7 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </Box>
-      </Stack>
+      </Box>
 
       {/* Диалоги создания */}
       <NewTaskDialog
